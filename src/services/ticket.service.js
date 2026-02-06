@@ -153,12 +153,14 @@ async function createTicket(ticketData) {
   const initiatorName = ticketData.initiator || 'User';
 
   const ticket = new Ticket({
+    // Spread user data first (category, subCategory, subject, description, etc.)
+    ...ticketData,
+    // Then override with generated/default values (these take priority)
     ticketId: newTicketId,
     srNo: nextSrNo,
     raisedOn: formattedDate,
     lastUpdatedOn: formattedDate,
     status: 'Pending',
-    // Set initiator-related fields
     initiator: initiatorName,
     raisedBy: ticketData.raisedBy || initiatorName,
     reClientName: ticketData.reClientName || initiatorName,
@@ -172,8 +174,7 @@ async function createTicket(ticketData) {
       status: 'Pending',
       remark: `Ticket raised for ${ticketData.category} - ${ticketData.subCategory}`,
       userName: initiatorName
-    }],
-    ...ticketData
+    }]
   });
 
   await ticket.save();
