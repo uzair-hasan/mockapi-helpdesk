@@ -295,12 +295,27 @@ function formatDate(date) {
 
 // Static method to generate next ticket ID
 TicketSchema.statics.generateTicketId = async function() {
-  const lastTicket = await this.findOne().sort({ ticketId: -1 });
-  if (!lastTicket) {
-    return '7654567897'; // Starting ticket ID matching mock data
+  // Find the highest numeric ticket ID (skip non-numeric IDs like TKT100001)
+  const tickets = await this.find().select('ticketId').lean();
+
+  if (!tickets || tickets.length === 0) {
+    return '7654567897'; // Starting ticket ID
   }
-  const nextId = String(parseInt(lastTicket.ticketId) + 1);
-  return nextId;
+
+  let maxNumericId = 0;
+  for (const t of tickets) {
+    const num = parseInt(t.ticketId, 10);
+    if (!isNaN(num) && num > maxNumericId) {
+      maxNumericId = num;
+    }
+  }
+
+  // If no numeric IDs found, start fresh
+  if (maxNumericId === 0) {
+    return '7654567897';
+  }
+
+  return String(maxNumericId + 1);
 };
 
 // Static method to get next srNo
