@@ -180,6 +180,7 @@ async function createTicket(ticketData) {
     reClientName: ticketData.reClientName || initiatorName,
     fiCode: ticketData.fiCode || generateFiCode(),
     assignedTo: ticketData.assignedTo || getRandomAssignee(),
+    documents: ticketData.documents || [],
     auditTrail: [{
       srNo: 1,
       activity: 'Ticket Created',

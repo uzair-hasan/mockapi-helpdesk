@@ -235,6 +235,11 @@ const TicketSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Top-level documents for ticket attachments
+  documents: {
+    type: [DocumentSchema],
+    default: []
+  },
   // Feedback fields
   feedback: {
     rating: {
