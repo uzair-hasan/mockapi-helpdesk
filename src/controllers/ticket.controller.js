@@ -114,6 +114,17 @@ async function createTicket(req, res) {
       );
     }
 
+    // Handle uploaded files
+    if (req.files && req.files.length > 0) {
+      ticketData.documents = req.files.map(file => ({
+        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: file.originalname,
+        type: getFileType(file.mimetype),
+        size: file.size,
+        url: `/uploads/${file.originalname}`
+      }));
+    }
+
     const ticket = await ticketService.createTicket(ticketData);
 
     sendSuccess(res, ticket, 'Ticket created successfully', 201);

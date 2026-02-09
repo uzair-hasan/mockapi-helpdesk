@@ -187,6 +187,7 @@ async function createTicket(ticketData) {
       timestamp: now.toISOString(),
       status: 'Pending',
       remark: `Ticket raised for ${ticketData.category} - ${ticketData.subCategory}`,
+      documents: ticketData.documents || [],
       userName: initiatorName
     }]
   });
