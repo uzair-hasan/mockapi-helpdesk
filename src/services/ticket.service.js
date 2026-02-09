@@ -43,6 +43,17 @@ function getRandomAssignee() {
   return SAMPLE_ASSIGNEES[Math.floor(Math.random() * SAMPLE_ASSIGNEES.length)];
 }
 
+// Helper to extract reopening reason from audit trail
+function extractReopeningReason(auditTrail) {
+  if (!auditTrail || auditTrail.length === 0) return null;
+  // Find the latest "Ticket Re-Opened" entry
+  const reopenEntry = [...auditTrail].reverse().find(e => e.activity === 'Ticket Re-Opened');
+  if (reopenEntry && reopenEntry.remark) {
+    return reopenEntry.remark.replace(/^Reason:\s*/, '').trim();
+  }
+  return null;
+}
+
 /**
  * Get tickets with pagination and filters
  * @param {Object} params - Query parameters
@@ -132,6 +143,9 @@ async function getTickets({
  */
 async function getTicketById(ticketId) {
   const ticket = await Ticket.findOne({ ticketId }).lean();
+  if (ticket && (ticket.status === 'Re-Opened' || ticket.reason)) {
+    ticket.reopeningReason = ticket.reason || extractReopeningReason(ticket.auditTrail);
+  }
   return ticket;
 }
 
@@ -277,6 +291,7 @@ async function reopenTicket(ticketId, data) {
   return {
     ticketId: ticket.ticketId,
     status: ticket.status,
+    reopeningReason: data.reason,
     message: 'Ticket reopened successfully'
   };
 }
@@ -444,10 +459,19 @@ async function getAdminTickets(params) {
   const result = await getTickets(params);
 
   // Add admin-specific computed fields
-  result.data = result.data.map(ticket => ({
-    ...ticket,
-    ticketAge: calculateTicketAge(ticket.raisedOn)
-  }));
+  result.data = result.data.map(ticket => {
+    const enriched = {
+      ...ticket,
+      ticketAge: calculateTicketAge(ticket.raisedOn)
+    };
+
+    // Add reopeningReason from reason field or audit trail
+    if (ticket.status === 'Re-Opened' || ticket.reason) {
+      enriched.reopeningReason = ticket.reason || extractReopeningReason(ticket.auditTrail);
+    }
+
+    return enriched;
+  });
 
   return result;
 }
