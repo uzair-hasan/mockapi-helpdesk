@@ -114,7 +114,7 @@ async function createTicket(req, res) {
       );
     }
 
-    // Handle uploaded files
+    // Handle uploaded files (multipart/form-data via multer)
     if (req.files && req.files.length > 0) {
       ticketData.documents = req.files.map(file => ({
         id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -123,6 +123,17 @@ async function createTicket(req, res) {
         size: file.size,
         url: `/uploads/${file.originalname}`
       }));
+    }
+    // Handle file names sent as JSON array from frontend (Content-Type: application/json)
+    else if (ticketData.files && Array.isArray(ticketData.files) && ticketData.files.length > 0) {
+      ticketData.documents = ticketData.files.map(fileName => ({
+        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: fileName,
+        type: getFileType(getExtensionMimeType(fileName)),
+        size: 0,
+        url: `/uploads/${fileName}`
+      }));
+      delete ticketData.files; // Clean up so it doesn't get spread into the model
     }
 
     const ticket = await ticketService.createTicket(ticketData);
@@ -529,6 +540,24 @@ async function downloadDocument(req, res) {
   } catch (error) {
     sendError(res, error);
   }
+}
+
+/**
+ * Helper to guess mime type from file extension
+ */
+function getExtensionMimeType(fileName) {
+  const ext = (fileName.split('.').pop() || '').toLowerCase();
+  const mimeMap = {
+    pdf: 'application/pdf',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    xls: 'application/vnd.ms-excel',
+    json: 'application/json',
+    mp4: 'video/mp4'
+  };
+  return mimeMap[ext] || 'application/octet-stream';
 }
 
 /**
