@@ -276,8 +276,12 @@ TicketSchema.virtual('calculatedTicketAge').get(function() {
   return `${diffDays} days`;
 });
 
-// Pre-save middleware to update lastUpdatedOn
+// Pre-save middleware to update lastUpdatedOn and sanitize fields
 TicketSchema.pre('save', function(next) {
+  // Trim status to prevent whitespace/newline issues
+  if (this.status) {
+    this.status = this.status.trim();
+  }
   if (this.isModified()) {
     this.lastUpdatedOn = formatDate(new Date());
   }
